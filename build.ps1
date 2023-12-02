@@ -1,5 +1,4 @@
 #Requires -Version 5
-
 <#
 .Synopsis
 	Build script using Invoke-Build (https://github.com/nightroman/Invoke-Build)
@@ -8,12 +7,20 @@
     * Installing required modules
     * Building the module
     * Running pester tests
-    * Running psscriptanalyzer 
+    * Running psscriptanalyzer
 
    To run the basic build:
         .\build.ps1
 
 #>
+
+[CmdletBinding()]
+param (
+    [Parameter()]
+    [ValidateSet("Build","Test","Analyze","Publish")]
+    [string]
+    $Task = 'Build'
+)
 
 if ((get-module Microsoft.Powershell.PSResourceGet -ListAvailable) -eq $null) {
     Write-Host -NoNewLine "      Installing PSResourceGet module"
@@ -29,7 +36,7 @@ if ((get-module Microsoft.Powershell.PSResourceGet -ListAvailable) -eq $null) {
 
 if ((get-module PSScriptAnalyzer -ListAvailable) -eq $null) {
     Write-Host -NoNewLine "      Installing PScriptAnalyzer module"
-    $null = Install-PSResource PSScriptAnalyzer 
+    $null = Install-PSResource PSScriptAnalyzer
     Write-Host -ForegroundColor Green '...Installed!'
 }
 
@@ -48,24 +55,33 @@ else {
     throw 'How did you even get here?'
 }
 
-# Kick off the standard build
-try {
-    Build-Module $PSScriptRoot\source\ 
-}
-catch {
-    # If it fails then show the error and try to clean up the environment
-    Write-Host -ForegroundColor Red 'Build Failed with the following error:'
-    Write-Output $_
-}
-finally {
-    Write-Host ''
-    #Write-Host 'Attempting to clean up the session (loaded modules and such)...'
-    #Invoke-Build BuildSessionCleanup
-    #Remove-Module 
+if ($task -eq "Build") {
+    # Kick off the standard build
+    try {
+        Build-Module $PSScriptRoot\source\
+    }
+    catch {
+        # If it fails then show the error and try to clean up the environment
+        Write-Host -ForegroundColor Red 'Build Failed with the following error:'
+        Write-Output $_
+    }
+    finally {
+        Write-Host ''
+        #Write-Host 'Attempting to clean up the session (loaded modules and such)...'
+        #Invoke-Build BuildSessionCleanup
+        #Remove-Module
+    }
 }
 
-invoke-pester $psscriptroot\tests\
+if ($Task -eq "Test") {
+    invoke-pester $psscriptroot\tests\
+}
 
-Invoke-ScriptAnalyzer -Path $psscriptroot\source\private\*
-Invoke-ScriptAnalyzer -Path $psscriptroot\source\public\*
+if ($Task -eq "Analyze") {
+    Invoke-ScriptAnalyzer -Path $psscriptroot\source\private\* -Settings $PSScriptRoot\tests\PSScriptAnalyzerSettings.psd1
+    Invoke-ScriptAnalyzer -Path $psscriptroot\source\public\*  -Settings $PSScriptRoot\tests\PSScriptAnalyzerSettings.psd1
+}
 
+if ($Task -eq "Publish") {
+    Write-Warning "Publish has not been implemented yet"
+}

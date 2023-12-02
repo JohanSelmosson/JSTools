@@ -7,17 +7,17 @@ function New-JSModule {
         # Path
         [Parameter()]
         [string]
-        $Path  
+        $Path
     )
 
     if ($Path -eq "") {
         $Path = (get-item (Get-Location)).FullName
         Write-Verbose "Path is undefined, setting the parent path to: $Path"
-    }    
+    }
 
     if (test-path (join-path $path $ModuleName) -PathType Container ) {
         Write-Verbose "folder $(Join-Path $path $ModuleName) already exists"
-    
+
         if ((get-childitem (join-path $path $ModuleName)).Count -eq 0) {
             Write-Verbose "Folder is empty, creating module here."
         }
@@ -30,20 +30,21 @@ function New-JSModule {
     $ModulePath = Join-Path $Path $ModuleName
 
     new-item $ModulePath -ItemType Directory
-    New-Item $ModulePath\Tests\ -ItemType Directory
+    New-Item $ModulePath\.vscode -ItemType Directory
+    New-Item $ModulePath\tests\ -ItemType Directory
     new-item $ModulePath\source\public -itemType Directory
     new-item $ModulePath\source\private -itemType Directory
-    
+
     new-item $ModulePath\source\public\.gitkeep -itemType File
     new-item $ModulePath\source\private\.gitkeep -itemType File
-    
+
     $GitIgnore = @"
 # ignore the build folder
 Output/
 "@
 
-    set-content $path\$ModuleName\.gitignore -value $GitIgnore    
-    
+    set-content $path\$ModuleName\.gitignore -value $GitIgnore
+
     $BuildPsdOneContent = @"
 # -----------------------------------------------------------------------------
 # ModuleBuilder configuration file. Use this file to override the default
@@ -83,8 +84,6 @@ describe 'Module-level tests' {
         `$Version = (Test-ModuleManifest `$PSScriptRoot\..\source\$ModuleName.psd1 -ErrorAction SilentlyContinue ).Version
     }
 
-    `$Version = (Test-ModuleManifest `$PSScriptRoot\..\source\$ModuleName.psd1 -ErrorAction SilentlyContinue ).Version
-
     it 'the module imports successfully' {
         { Import-Module "`$PSScriptRoot\..\output\$ModuleName\`$Version\$moduleName.psm1" -ErrorAction Stop } | Should -not -Throw
     }
@@ -101,6 +100,76 @@ describe 'Module-level tests' {
 "@
     set-content $ModulePath\Tests\$ModuleName.Generic.Tests.ps1 -Value $PesterBaseTests
 
+$dotvscodeSettings = @"
+{
+    "files.trimTrailingWhitespace": true,
+    "files.insertFinalNewline": true,
+    "editor.insertSpaces": true,
+    "editor.tabSize": 4,
+    "powershell.codeFormatting.preset": "OTBS"
+}
+"@
+Set-Content -Path $ModulePath\.vscode\settings.json -Value $dotvscodeSettings
+
+
+$pscodeanalyzer = @"
+@{
+    #Severity=@('Error','Warning')
+    ExcludeRules=@('MadeupRule',
+        'AnotherMadeupRule'
+    )
+}
+"@
+Set-Content -Path $ModulePath\tests\PSScriptAnalyzerSettings.psd1 -Value $pscodeanalyzer
+
+$dotvsodeTasks = @"
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+
+    // Start PowerShell (pwsh on *nix)
+    "windows": {
+        "options": {
+            "shell": {
+                "executable": "powershell.exe",
+                "args": [ "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command" ]
+            }
+        }
+    },
+    "linux": {
+        "options": {
+            "shell": {
+                "executable": "/usr/bin/pwsh",
+                "args": [ "-NoProfile", "-Command" ]
+            }
+        }
+    },
+    "osx": {
+        "options": {
+            "shell": {
+                "executable": "/usr/local/bin/pwsh",
+                "args": [ "-NoProfile", "-Command" ]
+            }
+        }
+    },
+
+    "tasks": [
+        {
+            "label": "Build",
+            "type": "shell",
+            "command": "`${cwd}/build.ps1 -Verbose",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        }
+    ]
+}
+"@
+set-content $ModulePath\.vscode\tasks.json -Value $dotvsodeTasks
+
+
     $buildscript = @"
 #Requires -Version 5
 
@@ -112,7 +181,7 @@ describe 'Module-level tests' {
     * Installing required modules
     * Building the module
     * Running pester tests
-    * Running psscriptanalyzer 
+    * Running psscriptanalyzer
 
    To run the basic build:
         .\build.ps1
@@ -133,7 +202,7 @@ if ((get-module Microsoft.Powershell.PSResourceGet -ListAvailable) -eq `$null) {
 
 if ((get-module PSScriptAnalyzer -ListAvailable) -eq `$null) {
     Write-Host -NoNewLine "      Installing PScriptAnalyzer module"
-    `$null = Install-PSResource PSScriptAnalyzer 
+    `$null = Install-PSResource PSScriptAnalyzer
     Write-Host -ForegroundColor Green '...Installed!'
 }
 
@@ -154,7 +223,7 @@ else {
 
 # Kick off the standard build
 try {
-    Build-Module `$PSScriptRoot\source\ 
+    Build-Module `$PSScriptRoot\source\
 }
 catch {
     # If it fails then show the error and try to clean up the environment
@@ -165,13 +234,14 @@ finally {
     Write-Host ''
     #Write-Host 'Attempting to clean up the session (loaded modules and such)...'
     #Invoke-Build BuildSessionCleanup
-    #Remove-Module 
+    #Remove-Module
 }
 
 invoke-pester `$psscriptroot\tests\
 
-Invoke-ScriptAnalyzer -Path `$psscriptroot\source\private\*
-Invoke-ScriptAnalyzer -Path `$psscriptroot\source\public\*
+Invoke-ScriptAnalyzer -Path `$psscriptroot\source\private\* -Settings `$PSScriptRoot\tests\PSScriptAnalyzerSettings.psd1
+Invoke-ScriptAnalyzer -Path `$psscriptroot\source\public\*  -Settings `$PSScriptRoot\tests\PSScriptAnalyzerSettings.psd1
+
 
 "@
 
@@ -186,7 +256,7 @@ if ($testing) {
     Set-Location c:\mb
     remove-item C:\mb\jsmoduletest -Recurse
     New-JSModule -ModuleName jsmoduletest
-    
+
     Set-Location C:\mb\jsmoduletest\
     .\build.ps1
 }

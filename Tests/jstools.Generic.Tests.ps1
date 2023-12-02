@@ -4,8 +4,6 @@ describe 'Module-level tests' {
         $Version = (Test-ModuleManifest $PSScriptRoot\..\source\jstools.psd1 -ErrorAction SilentlyContinue ).Version
     }
 
-    $Version = (Test-ModuleManifest $PSScriptRoot\..\source\jstools.psd1 -ErrorAction SilentlyContinue ).Version
-
     it 'the module imports successfully' {
         { Import-Module "$PSScriptRoot\..\output\jstools\$Version\jstools.psm1" -ErrorAction Stop } | Should -not -Throw
     }
@@ -15,7 +13,9 @@ describe 'Module-level tests' {
     }
 
     it 'passes all default PSScriptAnalyzer rules' {
-        Invoke-ScriptAnalyzer -Path "$PSScriptRoot\..\output\jstools\$Version\jstools.psm1" | should -BeNullOrEmpty
+        $ModuleFile =  "$PSScriptRoot\..\output\jstools\$Version\jstools.psm1"
+        $PSScriptAnalyzerSettings = "$PSScriptRoot\..\tests\PSScriptAnalyzerSettings.psd1"
+        Invoke-ScriptAnalyzer -Path $ModuleFile -Settings $PSScriptAnalyzerSettings | should -BeNullOrEmpty
     }
 }
 

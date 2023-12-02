@@ -25,7 +25,7 @@ function Get-LastBootUpTime {
 
     Begin {
         if ($null -eq $ComputerName) {
-            $ComputerName = "" 
+            $ComputerName = ""
         }
 
         function GetLastBootUpTime {
@@ -47,9 +47,9 @@ function Get-LastBootUpTime {
                 Write-Warning "$PSitem"
                 return [PSCustomObject]@{
                     ComputerName   = $ComputerName
-                    LastBootUpTime = "" 
+                    LastBootUpTime = ""
                     Uptime         = ""
-                    UptimeVerbose  = "Unknown, query failed." 
+                    UptimeVerbose  = "Unknown, query failed."
                 }
             }
 
@@ -67,7 +67,7 @@ function Get-LastBootUpTime {
                 ComputerName   = $ComputerName
                 LastBootUpTime = $LastBootUpTime
                 Uptime         = $TimeSpan
-                UptimeVerbose  = $VerboseTimeSpan 
+                UptimeVerbose  = $VerboseTimeSpan
             }
 
         }

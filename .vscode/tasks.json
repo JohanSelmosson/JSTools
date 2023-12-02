@@ -1,0 +1,71 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+
+    // Start PowerShell (pwsh on *nix)
+    "windows": {
+        "options": {
+            "shell": {
+                "executable": "powershell.exe",
+                "args": [ "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command" ]
+            }
+        }
+    },
+    "linux": {
+        "options": {
+            "shell": {
+                "executable": "/usr/bin/pwsh",
+                "args": [ "-NoProfile", "-Command" ]
+            }
+        }
+    },
+    "osx": {
+        "options": {
+            "shell": {
+                "executable": "/usr/local/bin/pwsh",
+                "args": [ "-NoProfile", "-Command" ]
+            }
+        }
+    },
+//TODO: Must fix the test, publish and analyze tasks. Compare with stucco
+    "tasks": [
+        {
+            "label": "Build",
+            "type": "shell",
+            "command": "${cwd}/build.ps1 -Task Build",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+
+        {
+            "label": "Test",
+            "type": "shell",
+            "command": "${cwd}/build.ps1 -Task Test",
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "Analyze",
+            "type": "shell",
+            "command": "${cwd}/build.ps1 -Task Analyze",
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "Publish",
+            "type": "shell",
+            "command": "${cwd}/build.ps1 -Task Publish -Verbose",
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            }
+        },
+    ]
+}

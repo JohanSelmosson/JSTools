@@ -1,4 +1,4 @@
-function Test-PortReachable {
+function Test-JSTCPAvailability {
     <#
     .SYNOPSIS
         Tests if different tcp ports are reachable, a few builtin scenarios are included
@@ -15,7 +15,7 @@ function Test-PortReachable {
         "Server01", "Server02" | Test-PortReachable -Port 80,443,3389,5985
         Tests if the ports 80, 443,3389 and 5985 are reachable on Server01 and Server02
     .EXAMPLE
-        "Server01", "Server02" | Test-PortReachable -CheckRPC 
+        "Server01", "Server02" | Test-PortReachable -CheckRPC
         Tries to connect to all RPC Services on Server01 and Server02 and returns the result in the output.
     .NOTES
         Author: Johan Selmosson
@@ -73,11 +73,11 @@ function Test-PortReachable {
             .LINK
                 https://devblogs.microsoft.com/scripting/testing-rpc-ports-with-powershell-and-yes-its-as-much-fun-as-it-sounds/
             .EXAMPLE
-                Test-RPC 
+                Test-RPC
                 Shows all RPC Services on localhost
             #>
-            
-            
+
+
             [CmdletBinding()]
             Param(
                 [Parameter(ValueFromPipeline)]
