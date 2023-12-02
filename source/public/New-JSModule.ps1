@@ -187,6 +187,13 @@ set-content $ModulePath\.vscode\tasks.json -Value $dotvsodeTasks
         .\build.ps1
 
 #>
+[CmdletBinding()]
+param (
+    [Parameter()]
+    [ValidateSet("Build","Test","Analyze","Publish")]
+    [string[]]
+    `$Task = 'Build', 'Test'
+)
 
 if ((get-module Microsoft.Powershell.PSResourceGet -ListAvailable) -eq `$null) {
     Write-Host -NoNewLine "      Installing PSResourceGet module"
@@ -221,26 +228,36 @@ else {
     throw 'How did you even get here?'
 }
 
-# Kick off the standard build
-try {
-    Build-Module `$PSScriptRoot\source\
-}
-catch {
-    # If it fails then show the error and try to clean up the environment
-    Write-Host -ForegroundColor Red 'Build Failed with the following error:'
-    Write-Output `$_
-}
-finally {
-    Write-Host ''
-    #Write-Host 'Attempting to clean up the session (loaded modules and such)...'
-    #Invoke-Build BuildSessionCleanup
-    #Remove-Module
+if (`$task -contains "Build") {
+    # Kick off the standard build
+    try {
+        Build-Module `$PSScriptRoot\source\
+    }
+    catch {
+        # If it fails then show the error and try to clean up the environment
+        Write-Host -ForegroundColor Red 'Build Failed with the following error:'
+        Write-Output `$_
+    }
+    finally {
+        Write-Host ''
+        #Write-Host 'Attempting to clean up the session (loaded modules and such)...'
+        #Invoke-Build BuildSessionCleanup
+        #Remove-Module
+    }
 }
 
-invoke-pester `$psscriptroot\tests\
+if (`$Task -contains "Test") {
+    invoke-pester `$psscriptroot\tests\
+}
 
-Invoke-ScriptAnalyzer -Path `$psscriptroot\source\private\* -Settings `$PSScriptRoot\tests\PSScriptAnalyzerSettings.psd1
-Invoke-ScriptAnalyzer -Path `$psscriptroot\source\public\*  -Settings `$PSScriptRoot\tests\PSScriptAnalyzerSettings.psd1
+if (`$Task -contains "Analyze") {
+    Invoke-ScriptAnalyzer -Path `$psscriptroot\source\private\* -Settings `$PSScriptRoot\tests\PSScriptAnalyzerSettings.psd1
+    Invoke-ScriptAnalyzer -Path `$psscriptroot\source\public\*  -Settings `$PSScriptRoot\tests\PSScriptAnalyzerSettings.psd1
+}
+
+if (`$Task -contains "Publish") {
+    Write-Warning "Publish has not been implemented yet"
+}
 
 
 "@

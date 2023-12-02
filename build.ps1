@@ -18,8 +18,8 @@
 param (
     [Parameter()]
     [ValidateSet("Build","Test","Analyze","Publish")]
-    [string]
-    $Task = 'Build'
+    [string[]]
+    $Task = @('Build', 'Test')
 )
 
 if ((get-module Microsoft.Powershell.PSResourceGet -ListAvailable) -eq $null) {
@@ -55,7 +55,7 @@ else {
     throw 'How did you even get here?'
 }
 
-if ($task -eq "Build") {
+if ($task -contains "Build") {
     # Kick off the standard build
     try {
         Build-Module $PSScriptRoot\source\
@@ -73,15 +73,15 @@ if ($task -eq "Build") {
     }
 }
 
-if ($Task -eq "Test") {
+if ($Task -contains "Test") {
     invoke-pester $psscriptroot\tests\
 }
 
-if ($Task -eq "Analyze") {
+if ($Task -contains "Analyze") {
     Invoke-ScriptAnalyzer -Path $psscriptroot\source\private\* -Settings $PSScriptRoot\tests\PSScriptAnalyzerSettings.psd1
     Invoke-ScriptAnalyzer -Path $psscriptroot\source\public\*  -Settings $PSScriptRoot\tests\PSScriptAnalyzerSettings.psd1
 }
 
-if ($Task -eq "Publish") {
+if ($Task -contains "Publish") {
     Write-Warning "Publish has not been implemented yet"
 }
