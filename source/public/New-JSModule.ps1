@@ -1,4 +1,25 @@
 function New-JSModule {
+    <#
+    .SYNOPSIS
+        Creates the scaffolding for a new module.
+    .DESCRIPTION
+        This is a self contained function that creates the folders, buildscripts and manifest files
+        that are needed to maintain a buildable module
+    .NOTES
+        Information or caveats about the function e.g. 'This function is not supported in Linux'
+    .LINK
+        Specify a URI to a help page, this will show when Get-Help -Online is used.
+    .EXAMPLE
+        New-JSModule -ModuleName js.windows.uptime
+        Creates the folders and files needed for building a module namned js.windows.uptime in
+        the folder .\js.windows.uptime.
+
+        New-JSModule -ModuleName js.windows.schedulereboot -path c:\PS\
+        Creates the folders and files needed for building a module named js.windows.schedulereboot
+        in the folder c:\ps\js.windows.schedulereboot\
+    #>
+
+
     [CmdletBinding()]
     param (
         [Parameter()]
@@ -11,14 +32,14 @@ function New-JSModule {
     )
 
     if ($Path -eq "") {
-        $Path = (get-item (Get-Location)).FullName
+        $Path = (Get-Item (Get-Location)).FullName
         Write-Verbose "Path is undefined, setting the parent path to: $Path"
     }
 
-    if (test-path (join-path $path $ModuleName) -PathType Container ) {
+    if (Test-Path (Join-Path $path $ModuleName) -PathType Container ) {
         Write-Verbose "folder $(Join-Path $path $ModuleName) already exists"
 
-        if ((get-childitem (join-path $path $ModuleName)).Count -eq 0) {
+        if ((Get-ChildItem (Join-Path $path $ModuleName)).Count -eq 0) {
             Write-Verbose "Folder is empty, creating module here."
         }
         else {
@@ -33,7 +54,9 @@ function New-JSModule {
     New-Item $ModulePath\.vscode -ItemType Directory
     New-Item $ModulePath\tests\ -ItemType Directory
     new-item $ModulePath\source\public -itemType Directory
+    new-item $ModulePath\source\classes -itemType Directory
     new-item $ModulePath\source\private -itemType Directory
+    new-item $ModulePath\source\files -itemType Directory
 
     new-item $ModulePath\source\public\.gitkeep -itemType File
     new-item $ModulePath\source\private\.gitkeep -itemType File
@@ -58,7 +81,8 @@ Output/
     VersionedOutputDirectory = `$true
     CopyDirectories = @(
         #Path relative to the source folder
-        #".\Files",
+        ".\Files"
+        #Add a comma after files if you want to copy more than one folder.
         #".\AnotherfolderwithFiles"
     )
 }
