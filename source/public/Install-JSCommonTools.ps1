@@ -1,4 +1,4 @@
-function Install-JSCommonToolsWIP {
+function Install-JSCommonTools {
     [CmdletBinding()]
     param (
 
@@ -38,4 +38,3 @@ function Install-JSCommonToolsWIP {
 
     }
 }
-Install-JSCommonToolsWIP -verbose

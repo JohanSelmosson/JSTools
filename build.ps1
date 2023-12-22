@@ -17,9 +17,9 @@
 [CmdletBinding()]
 param (
     [Parameter()]
-    [ValidateSet("Build","Test","Analyze","Publish")]
+    [ValidateSet("Build","Test","Analyze","Publish","Import")]
     [string[]]
-    $Task = @('Build', 'Test')
+    $Task = @('Build', 'Test','Import')
 )
 
 if ((get-module Microsoft.Powershell.PSResourceGet -ListAvailable) -eq $null) {
@@ -84,4 +84,11 @@ if ($Task -contains "Analyze") {
 
 if ($Task -contains "Publish") {
     Write-Warning "Publish has not been implemented yet"
+}
+
+if ($Task -contains "Import") {
+    if ((get-module).name -contains 'jstools') {
+        Remove-Module jstools
+    }
+    Import-Module $psscriptroot\Output\jstools
 }
