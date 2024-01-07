@@ -1,4 +1,4 @@
-function Get-LastBootUpTime {
+function Get-JSLastBootUpTime {
     <#
     .SYNOPSIS
         Gets the last boot time and how many days and hours since that time.
@@ -55,11 +55,16 @@ function Get-LastBootUpTime {
 
             $TimeSpan = New-TimeSpan -Start $LastBootUpTime -end (get-date)
             $VerboseTimeSpan = switch ($timespan) {
-                { $_.TotalMinutes -le '60' } { "$([math]::Round($_.TotalMinutes,0)) minutes since last boot"; continue }
+                { $_.TotalMinutes -le '59' } { "$([math]::Round($_.TotalMinutes,0)) minutes since last boot"; continue }
+
                 { $_.TotalHours -eq '1' } { "$([math]::Round($_.TotalHours,0)) hour $($_.Minutes) minutes since last boot"; continue }
-                { $_.TotalHours -le '24' } { "$([math]::Round($_.TotalHours,0)) hours $($_.Minutes) minutes since last boot"; continue }
-                { $_.TotalDays -eq '1' } { "$($_.Days) day $($_.Hours) hours since last boot"; continue }
-                { $_.TotalDays -le '30' } { "$($_.Days) days $($_.Hours) hours since last boot"; continue }
+                { $_.TotalHours -le '23' } { "$([math]::Round($_.TotalHours,0)) hours $($_.Minutes) minutes since last boot"; continue }
+
+                { $_.TotalDays -eq '1' -and $_.Hours -eq '1'} { "$($_.Days) day and $($_.Hours) hour since last boot"; continue }
+                { $_.TotalDays -eq '1' } { "$($_.Days) day and $($_.Hours) hours since last boot"; continue }
+
+                { $_.TotalDays -le '30' -and $_.Hours -eq '1' } { "$($_.Days) days and $($_.Hours) hour since last boot"; continue }
+                { $_.TotalDays -le '30'} { "$($_.Days) days and $($_.Hours) hours since last boot"; continue }
                 Default { "$([math]::Round($_.TotalDays,0)) days since last boot" }
             }
 

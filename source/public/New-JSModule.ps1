@@ -60,6 +60,8 @@ function New-JSModule {
 
     new-item $ModulePath\source\public\.gitkeep -itemType File
     new-item $ModulePath\source\private\.gitkeep -itemType File
+    new-item $ModulePath\source\classes\.gitkeep -itemType File
+    new-item $ModulePath\source\files\.gitkeep -itemType File
 
     $GitIgnore = @"
 # ignore the build folder
@@ -93,10 +95,11 @@ Output/
 function Write-About$ModuleName {
     Write-Information "This is a sample function in the $ModuleName module."
     Write-Host "This is a sample function in the $ModuleName module."
-    $unused = "not used"
+    `$unused = "not used"
 }
 
 "@
+
     set-content $ModulePath\source\public\Write-About$ModuleName.ps1 -Value $SampleFunctionFile
 
     #Install-Module -Name PSScriptAnalyzer -Scope CurrentUser
@@ -214,21 +217,15 @@ set-content $ModulePath\.vscode\tasks.json -Value $dotvsodeTasks
 [CmdletBinding()]
 param (
     [Parameter()]
-    [ValidateSet("Build","Test","Analyze","Publish")]
+    [ValidateSet("Build","Test","Analyze","Publish", "Import")]
     [string[]]
-    `$Task = 'Build', 'Test'
+    `$Task = @('Build', 'Test', 'Import')
 )
 
 if ((get-module Microsoft.Powershell.PSResourceGet -ListAvailable) -eq `$null) {
     Write-Host -NoNewLine "      Installing PSResourceGet module"
     `$null = Install-Module Microsoft.Powershell.PSResourceGet
     Write-Host -ForegroundColor Green '...Installed!'
-}
-
-if ((get-module Microsoft.Powershell.PSResourceGet -ListAvailable) -eq `$null) {
-    Write-Host -NoNewLine "      Importing PSResourceGet module"
-    `$null = Import-Module Microsoft.Powershell.PSResourceGet
-    Write-Host -ForegroundColor Green '...Imported!'
 }
 
 if ((get-module PSScriptAnalyzer -ListAvailable) -eq `$null) {
@@ -241,15 +238,6 @@ if ((get-PSResource ModuleBuilder) -eq `$null) {
     Write-Host -NoNewLine "      Installing ModuleBuilder module"
     `$null = Install-PSResource ModuleBuilder
     Write-Host -ForegroundColor Green '...Installed!'
-}
-
-if (get-PSResource ModuleBuilder ) {
-    Write-Host -NoNewLine "      Importing ModuleBuilder module"
-    Import-Module ModuleBuilder -Force -WarningAction SilentlyContinue
-    Write-Host -ForegroundColor Green '...Imported!'
-}
-else {
-    throw 'How did you even get here?'
 }
 
 if (`$task -contains "Build") {
@@ -279,13 +267,19 @@ if (`$Task -contains "Analyze") {
     Invoke-ScriptAnalyzer -Path `$psscriptroot\source\public\*  -Settings `$PSScriptRoot\tests\PSScriptAnalyzerSettings.psd1
 }
 
+if (`$Task -contains "Import") {
+    if ((get-module).name -contains '$ModuleName') {
+        Remove-Module $ModuleName
+    }
+    Import-Module `$psscriptroot\Output\$ModuleName
+}
+
 if (`$Task -contains "Publish") {
     Write-Warning "Publish has not been implemented yet"
 }
 
 
 "@
-
     set-content $ModulePath\build.ps1 -Value $buildscript
 
     New-ModuleManifest -Path "$ModulePath\source\$ModuleName.psd1" -RootModule "$ModuleName.psm1" -ModuleVersion '0.1.0'
