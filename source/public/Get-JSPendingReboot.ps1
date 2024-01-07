@@ -1,4 +1,4 @@
-Function Get-PendingReboot {
+Function Get-JSPendingReboot {
     [CmdletBinding()]
     param(
         [Parameter(Position = 0, ValueFromPipeline = $true, ValueFromPipelineByPropertyName = $true)]
@@ -118,7 +118,7 @@ Function Get-PendingReboot {
 
             }
             Catch {
-                LogWrite -Message "$Computer`: $_"
+               # LogWrite -Message "$Computer`: $_"
             }
         }## End Foreach ($Computer in $ComputerName)
     }## End Process

@@ -6,13 +6,25 @@ function Install-JSCommonToolsWIP {
 
     begin {
         $commands = @{
-            "rg" = "install BurntSushi.ripgrep.MSVC"
-            "fzf" = "install fzf"
-            "code"  = "install Microsoft.VisualStudioCode"
-            "git"  = "install Git.Git"
+            "rg" = "BurntSushi.ripgrep.MSVC"
+            "fzf" = "fzf"
+            "pwsh" = "Microsoft.PowerShell"
+            "code"  = "Microsoft.VisualStudioCode"
+            "git"  = "Git.Git"
         }
 
-        $wingetexepath = (get-command winget).source
+        $WingetExePath = (get-command winget).source
+
+        $Modules = @(
+            'Pester',
+            'PSScriptAnalyzer'
+        )
+
+        $ModulesAvailable = Get-Module -ListAvailable
+
+        if ($ModulesAvailable.Name -notcontains 'Microsoft.Powershell.PSResourceGet') {
+            Install-Module - 'Microsoft.Powershell.PSResourceGet'
+        }
 
     }
 
@@ -20,13 +32,21 @@ function Install-JSCommonToolsWIP {
 
         foreach ($command in $commands.keys) {
             try {
-                get-command $command -erroraction stop
+                $null = get-command $command -erroraction stop
                 Write-Information "Command $command is available"
             }
             catch {
                 write-verbose "Excuting: $($commands[$command])"
                 #& $($commands[$command])
-                & $wingetexepath $commands[$command]
+                try {
+                    #Start-Process -FilePath $wingetexepath -Wait -ArgumentList $commands[$command]
+                    #Write-Host "Path to Winget: $WingetExePath"
+                    #Write-Host "$WingetExePath $($Commands[$command])"
+                    winget install $($Commands[$command])
+                }
+                catch {
+                    Write-Warning $PSItem
+                }
             }
         }
 
@@ -38,4 +58,4 @@ function Install-JSCommonToolsWIP {
 
     }
 }
-Install-JSCommonToolsWIP -verbose
+Install-JSCommonToolsWIP
