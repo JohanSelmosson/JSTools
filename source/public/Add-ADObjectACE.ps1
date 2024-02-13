@@ -77,13 +77,27 @@ function Add-ADObjectAce {
         break
     }
 
-    $Ace = [System.DirectoryServices.ActiveDirectoryAccessRule]::New(
-        $SID, #Identity
-        $ActiveDirectoryRights, #https://learn.microsoft.com/en-us/dotnet/api/system.directoryservices.activedirectoryrights?view=dotnet-plat-ext-8.0
-        $AccessControlType, #Allow / Deny
-        $ActiveDirectorySecurityInheritance,
-        $inheritedObjectGuid #Group GUID
-    )
+
+    if ($inheritedObjectType) {
+
+        #funkar
+        $Ace = [System.DirectoryServices.ActiveDirectoryAccessRule]::New(
+            $SID, #Identity
+            $ActiveDirectoryRights, #https://learn.microsoft.com/en-us/dotnet/api/system.directoryservices.activedirectoryrights?view=dotnet-plat-ext-8.0
+            $AccessControlType, #Allow / Deny
+            $ActiveDirectorySecurityInheritance,
+            $inheritedObjectGuid #Group GUID
+        )
+
+        #otestad
+        $Ace = [System.DirectoryServices.ActiveDirectoryAccessRule]::new(
+            [System.Security.Principal.SecurityIdentifier]$Sid,
+            [System.DirectoryServices.ActiveDirectoryRights]$ActiveDirectoryRights,
+            [System.Security.AccessControl.AccessControlType]$AccessControlType,
+            [System.Security.ActiveDirectorySecurityInheritance]$ActiveDirectorySecurityInheritance,
+            [guid]::$inheritedObjectGuid
+        )
+    }
 
     $ACL.AddAccessRule($Ace)
 
