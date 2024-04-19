@@ -20,7 +20,7 @@ function Get-JSLastBootUpTime {
             ValueFromPipeline,
             Position = 0)]
         [Alias("DNSHostName")]
-        [string]$ComputerName
+        [string[]]$ComputerName
     )
 
     Begin {
@@ -82,7 +82,7 @@ function Get-JSLastBootUpTime {
             return GetLastBootUpTime
         }
         foreach ($item in $computername) {
-            GetLastBootUpTime -ComputerName $ComputerName
+            GetLastBootUpTime -ComputerName $item
         }
     }
     End {
