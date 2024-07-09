@@ -112,15 +112,18 @@ describe 'Module-level tests' {
     }
 
     it 'the module imports successfully' {
-        { Import-Module "`$PSScriptRoot\..\output\$ModuleName\`$Version\$moduleName.psm1" -ErrorAction Stop } | Should -not -Throw
+        { Import-Module "`$PSScriptRoot\..\Output\$ModuleName\`$Version\$moduleName.psm1" -ErrorAction Stop } |
+            Should -not -Throw
     }
 
     it 'the module has an associated manifest' {
-        Test-Path "`$PSScriptRoot\..\output\$ModuleName\`$Version\$moduleName.psd1" | should -Be `$true
+        Test-Path "`$PSScriptRoot\..\Output\$ModuleName\`$Version\$moduleName.psd1" |
+            should -Be `$true
     }
 
     it 'passes all default PSScriptAnalyzer rules' {
-        Invoke-ScriptAnalyzer -Path "`$PSScriptRoot\..\output\$ModuleName\`$Version\$moduleName.psm1" | should -BeNullOrEmpty
+        Invoke-ScriptAnalyzer -Path "`$PSScriptRoot\..\Output\$ModuleName\`$Version\$moduleName.psm1" -Settings `$PSScriptRoot\..\tests\PSScriptAnalyzerSettings.psd1 |
+            should -BeNullOrEmpty
     }
 }
 
@@ -196,8 +199,114 @@ $dotvsodeTasks = @"
 "@
 set-content $ModulePath\.vscode\tasks.json -Value $dotvsodeTasks
 
+$GitLabCIyml = @"
+#variables:
+#  MODULE_PATH: (Get-ChildItem -Path .\Output\*.psm1 -Recurse).DirectoryName
 
-    $buildscript = @"
+#.def_rules:
+#  rules:
+#  - if: `$CI_PIPELINE_SOURCE == 'merge_request_event' && `$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == 'dev'
+#  - if: `$CI_COMMIT_BRANCH == "main"
+
+default:
+  image:
+    name: mcr.microsoft.com/powershell:7.4-ubuntu-22.04
+  tags:
+    - docker
+
+stages:
+  - build
+  - test
+  - deploy
+
+build:
+  stage: build
+#  rules:
+#    - !reference [.def_rules, rules]
+  script:
+    - |
+      pwsh -c '
+          Set-PackageSource PSGallery -Trusted > `$null;
+          Set-PSResourceRepository -Name PSGallery -Trusted;
+          Install-PSResource -Name ModuleBuilder;
+          Install-PSResource -Name PSScriptAnalyzer;
+          ./build.ps1 -task Build;
+        '
+ #   - `$ModuleVersion = Get-ManifestValue .\source\nordlo.ombreport.psd1
+  artifacts:
+    paths:
+     - Output/
+
+psscriptanalyzer:
+  stage: test
+  #rules:
+  #  - !reference [.def_rules, rules]
+  script:
+        #Invoke-ScriptAnalyzer  -Path (Get-ChildItem -Path ./Output/*/*/*.psm1) -EnableExit -ReportSummary;
+    - pwsh -c '
+        Write-Host "Running PSScriptAnalyzer...";
+        Set-PSResourceRepository -Name PSGallery -Trusted;
+        Install-PSResource -Name PSScriptAnalyzer;
+        Invoke-ScriptAnalyzer -Path ./source/private/* -Settings ./tests/PSScriptAnalyzerSettings.psd1 -EnableExit -ReportSummary;
+        Invoke-ScriptAnalyzer -Path ./source/public/*  -Settings ./tests/PSScriptAnalyzerSettings.psd1 -EnableExit -ReportSummary;
+      '
+
+pester:
+  stage: test
+# # rules:
+# #   - !reference [.def_rules, rules]
+  script:
+    - pwsh -c '
+        Write-Host "Running Pester...";
+        Set-PSResourceRepository -Name PSGallery -Trusted;
+        Install-PSResource -Name ModuleBuilder;
+        Install-PSResource -Name PSScriptAnalyzer;
+        Install-PSResource -Name Pester;
+        Import-Module Pester;
+        `$Config = [PesterConfiguration]::Default;
+        `$Config.CodeCoverage.Enabled = `$False;
+        `$Config.TestResult.Enabled = `$True;
+        `$Config.TestResult.OutputFormat = "JunitXML";
+        `$Config.Run.Container = `$Container;
+        `$Result = Invoke-Pester -Configuration `$Config;
+        `$Result | Export-JUnitReport -Path testResults.xml;
+      '
+        #Invoke-Pester -EnableExit;
+  needs:
+  - job: build
+  artifacts:
+    paths:
+    - testResults.xml
+    #- coverage.xml
+    reports:
+      junit: testResults.xml
+    # Pester only has one output format called JaCoCo which is not supported by
+    # Gitlabs. Disabling for now.
+    # https://github.com/pester/Pester/issues/2203
+    #  coverage_report:
+    #    coverage_format: cobertura
+    #    path: coverage.xml
+
+publish:
+  stage: deploy
+  only:
+    - main
+  script:
+    - pwsh -c '
+        Register-PSResourceRepository -Name ngit -Uri "`$(`$env:CI_API_V4_URL)/projects/`$(`$env:CI_PROJECT_ID)/packages/nuget/index.json" -Trusted -ApiVersion v3 -Force;
+        Publish-PSResource -Repository ngit -Path (Get-ChildItem -Path ./Output/*/*/*.psm1).DirectoryName -ApiKey `$env:CI_JOB_TOKEN -Verbose;
+        Unregister-PSResourceRepository -Name ngit;
+      '
+  environment: production
+  needs:
+  - job: build
+    artifacts: true
+"@
+
+Set-Content -Path  "$ModulePath\.gitlab-ci.yml" -Value $GitLabCIyml
+
+
+$buildscript = @"
 #Requires -Version 5
 
 <#
@@ -287,7 +396,7 @@ if (`$Task -contains "Publish") {
 
 #$testing = $True
 if ($testing) {
-
+    new-item c:\mb -ItemType Directory
     Set-Location c:\mb
     remove-item C:\mb\jsmoduletest -Recurse
     New-JSModule -ModuleName jsmoduletest
