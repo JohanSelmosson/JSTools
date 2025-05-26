@@ -29,12 +29,16 @@ function Test-JSTCPAvailability {
         $Port,
         # Which Scenario to test
         [Parameter(Mandatory,ParameterSetName = 'Scenario')]
-        [ValidateSet('ActiveDirectoryServer',
-            'ExchangeServer',
-            'ADCS',
-            'SQLServer',
-            'MECMServer',
-            'WebServer')]
+        [ValidateSet(
+                'ActiveDirectoryDomainController',
+                'ActiveDirectoryCertificateServices',
+                'DHCPFailoverPartner',
+                'ExchangeServer',
+                'MECMServer',
+                'SQLServer',
+                'WebServer'
+            )
+        ]
         [string]
         $Scenario,
         # Timeout in milliseconds
@@ -58,7 +62,7 @@ function Test-JSTCPAvailability {
 
     Begin {
         if ($scenario) {
-            Write-Warning "This tool is in a state of development, most of the scenarios are just partially implemented"
+
         }
 
         Function Test-RPC {
@@ -845,7 +849,6 @@ function Test-JSTCPAvailability {
         }
 
         if ($Scenario -eq 'ADCS') {
-            Write-Warning "The scenario $scenario is just currently just a poc, do not solely rely on this output"
             $PortDescription = @{
                 445  = "SMB"
                 135  = "RPC Endpoint Mapper"
@@ -858,7 +861,6 @@ function Test-JSTCPAvailability {
         }
 
         if ($Scenario -eq 'ActiveDirectoryServer') {
-            Write-Warning "The scenario $scenario is just currently just a poc, do not solely rely on this output"
             $PortDescription = @{
                 53   = "DNS (TCP)"
                 88   = "Kerberos KDC (TCP)"
@@ -878,7 +880,6 @@ function Test-JSTCPAvailability {
 
 
         if ($Scenario -eq 'ExchangeServer') {
-            Write-Warning "The scenario $scenario is just currently just a poc, do not solely rely on this output"
             $PortDescription = @{
                 25   = "SMTP"
                 587  = "SMTP TLS"
@@ -891,7 +892,6 @@ function Test-JSTCPAvailability {
         }
 
         if ($Scenario -eq 'MECMServer') {
-            Write-Warning "The scenario $scenario is just currently just a poc, do not solely rely on this output"
             $PortDescription = @{
                 135  = "RPC"
                 80   = 'http'
@@ -904,6 +904,17 @@ function Test-JSTCPAvailability {
 
             $CheckRPC = $True
         }
+
+
+        if ($Scenario -eq 'DHCPFailoverPartner') {
+            $PortDescription = @{
+                647  = "DHCP Failover"
+            }
+            $Port = $PortDescription.Keys
+
+            $CheckRPC = $True
+        }
+
 
         if ($Scenario -eq 'SQLServer') {
             Write-Warning "The scenario $scenario is just currently just a poc, do not solely rely on this output"
