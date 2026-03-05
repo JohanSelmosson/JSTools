@@ -66,6 +66,9 @@ function New-JSModule {
     $GitIgnore = @"
 # ignore the build folder
 Output/
+
+# Macos file metadata
+.DS_Store
 "@
 
     set-content $path\$ModuleName\.gitignore -value $GitIgnore
@@ -89,7 +92,7 @@ Output/
     )
 }
 "@
-    set-content -path $ModulePath\source\build.psd1 -Value $BuildPsdOneContent
+    set-content -path $ModulePath\source\build.psd1 -Encoding utf8BOM -Value $BuildPsdOneContent
 
     $samplefunctionfile = @"
 function Write-About$ModuleName {
@@ -100,7 +103,7 @@ function Write-About$ModuleName {
 
 "@
 
-    set-content $ModulePath\source\public\Write-About$ModuleName.ps1 -Value $SampleFunctionFile
+    set-content $ModulePath\source\public\Write-About$ModuleName.ps1 -Encoding utf8BOM -Value $SampleFunctionFile
 
     #Install-Module -Name PSScriptAnalyzer -Scope CurrentUser
 
@@ -128,7 +131,7 @@ describe 'Module-level tests' {
 }
 
 "@
-    set-content $ModulePath\Tests\$ModuleName.Generic.Tests.ps1 -Value $PesterBaseTests
+    set-content $ModulePath\Tests\$ModuleName.Generic.Tests.ps1 -Encoding utf8BOM -Value $PesterBaseTests
 
 $dotvscodeSettings = @"
 {
@@ -150,7 +153,7 @@ $pscodeanalyzer = @"
     )
 }
 "@
-Set-Content -Path $ModulePath\tests\PSScriptAnalyzerSettings.psd1 -Value $pscodeanalyzer
+Set-Content -Path $ModulePath\tests\PSScriptAnalyzerSettings.psd1 -Encoding utf8BOM -Value $pscodeanalyzer
 
 $dotvsodeTasks = @"
 {
@@ -197,7 +200,7 @@ $dotvsodeTasks = @"
     ]
 }
 "@
-set-content $ModulePath\.vscode\tasks.json -Value $dotvsodeTasks
+set-content $ModulePath\.vscode\tasks.json -Encoding utf8BOM -Value $dotvsodeTasks
 
 $GitLabCIyml = @"
 #variables:
@@ -389,7 +392,7 @@ if (`$Task -contains "Publish") {
 
 
 "@
-    set-content $ModulePath\build.ps1 -Value $buildscript
+    set-content $ModulePath\build.ps1 -Encoding utf8BOM -Value $buildscript
 
     New-ModuleManifest -Path "$ModulePath\source\$ModuleName.psd1" -RootModule "$ModuleName.psm1" -ModuleVersion '0.1.0'
 }
