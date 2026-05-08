@@ -228,11 +228,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
     .\build.ps1                          # Build + Test + Import
     .\build.ps1 -Task Build,Import       # Build and import only
     .\build.ps1 -Task Analyze            # Lint only
+    .\build.ps1 -Task Version            # Show next version (via GitVersion)
 #>
 [CmdletBinding()]
 param (
     [Parameter()]
-    [ValidateSet('Build', 'Test', 'Analyze', 'Publish', 'Import')]
+    [ValidateSet('Build', 'Test', 'Analyze', 'Publish', 'Import', 'Version')]
     [string[]]`$Task = @('Build', 'Test', 'Import'),
 
     # SemVer passed from GitVersion in CI; omit for local builds (uses manifest version)
@@ -372,6 +373,15 @@ if (`$Task -contains 'Publish') {
         Publish-PSResource -Path `$builtPath -Repository 'NuGet' -ApiKey `$apiKey
         Write-Host 'Published successfully.' -ForegroundColor Green
     }
+}
+
+if (`$Task -contains 'Version') {
+    `$env:PATH = "`$env:USERPROFILE\.dotnet\tools;`$env:PATH"
+    if (-not (Get-Command dotnet-gitversion -ErrorAction SilentlyContinue)) {
+        dotnet tool install --global GitVersion.Tool --ignore-failed-sources 2>`$null
+    }
+    `$semVer = (dotnet-gitversion /showvariable SemVer) | Select-Object -Last 1
+    Write-Host "Next version: `$semVer" -ForegroundColor Cyan
 }
 "@
     Set-Content "$ModulePath\build.ps1" -Encoding utf8BOM -Value $buildScript
