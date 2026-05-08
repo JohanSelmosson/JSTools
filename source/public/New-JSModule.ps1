@@ -586,6 +586,8 @@ Versioning is handled by **GitVersion 6** (``GitVersion.yml``). Version is compu
 
 Release notes are pulled from ``CHANGELOG.md`` — stable tags read ``## [X.Y.Z]``, rc tags read ``## [Unreleased]``.
 
+**Always update ``CHANGELOG.md`` before pushing.** Add entries under ``## [Unreleased]`` as you work. When cutting a release, rename the section to ``## [X.Y.Z]`` matching the tag. Run ``.\build.ps1 -Task Version`` to check what version GitVersion will assign before writing the section header.
+
 **PSScriptAnalyzer:** warnings are non-fatal on dev/main builds; any finding fails the build when ``CI_COMMIT_TAG`` is set.
 
 **Publishing** requires ``NUGET_API_KEY`` and ``NUGET_SERVER_URL`` environment variables.
