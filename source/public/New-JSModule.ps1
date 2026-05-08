@@ -601,8 +601,7 @@ The module targets PS 5.1+. Avoid cmdlets that require PS 6.1+:
     New-ModuleManifest -Path "$ModulePath\source\$ModuleName.psd1" `
         -RootModule "$ModuleName.psm1" `
         -ModuleVersion '0.0.1' `
-        -Author 'Johan Selmosson' `
-        -ReleaseNotes ''
+        -Author 'Johan Selmosson'
 
     Write-Host "Module scaffolding created at $ModulePath" -ForegroundColor Green
 }
