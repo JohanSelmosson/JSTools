@@ -616,5 +616,11 @@ The module targets PS 5.1+. Avoid cmdlets that require PS 6.1+:
         -ModuleVersion '0.0.1' `
         -Author 'Johan Selmosson'
 
+    # Add Prerelease and ReleaseNotes to PSData — required for ModuleBuilder -SemVer to work
+    $manifestPath = "$ModulePath\source\$ModuleName.psd1"
+    $manifestContent = [System.IO.File]::ReadAllText($manifestPath)
+    $manifestContent = $manifestContent -replace 'PSData = @\{', "PSData = @{`r`n`r`n        Prerelease = ''`r`n`r`n        ReleaseNotes = ''"
+    [System.IO.File]::WriteAllText($manifestPath, $manifestContent, [System.Text.Encoding]::UTF8)
+
     Write-Host "Module scaffolding created at $ModulePath" -ForegroundColor Green
 }
