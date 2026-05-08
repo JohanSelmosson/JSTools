@@ -369,7 +369,8 @@ if (`$Task -contains 'Publish') {
         if (-not (Get-PSResourceRepository -Name 'NuGet' -ErrorAction SilentlyContinue)) {
             Register-PSResourceRepository -Name 'NuGet' -Uri `$repoUri -Trusted
         }
-        `$outputRoot = Join-Path `$PSScriptRoot 'Output\$ModuleName'
+        `$moduleName = (Get-ChildItem (Join-Path `$PSScriptRoot 'Output') -Directory | Select-Object -First 1).Name
+        `$outputRoot = Join-Path `$PSScriptRoot "Output\`$moduleName"
         `$builtPath  = (Get-ChildItem `$outputRoot -Directory | Sort-Object Name -Descending | Select-Object -First 1).FullName
         if (-not `$builtPath) { throw "No built module found under `$outputRoot. Run Build first." }
         Write-Host "Publishing `$builtPath to `$serverUrl..." -ForegroundColor Cyan
