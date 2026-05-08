@@ -60,6 +60,7 @@ function New-JSModule {
     # .gitignore
     $gitIgnore = @"
 Output/
+testResults.xml
 .DS_Store
 "@
     Set-Content "$ModulePath\.gitignore" -Value $gitIgnore
