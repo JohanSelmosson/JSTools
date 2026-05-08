@@ -509,6 +509,83 @@ release-prerelease:
 "@
     Set-Content "$ModulePath\.gitlab-ci.yml" -Value $gitlabCi
 
+    # CLAUDE.md
+    $claudeMd = @"
+# CLAUDE.md
+
+This file provides guidance to Claude Code when working with code in this repository.
+
+## Build, Test, and Lint
+
+Uses **ModuleBuilder** + **Pester** + **PSScriptAnalyzer** via ``build.ps1``.
+The build script auto-installs missing prerequisites (PSResourceGet, PSScriptAnalyzer, ModuleBuilder, Pester).
+
+``````powershell
+# Build module → output to Output/$ModuleName/VERSION/
+.\build.ps1 -Task Build
+
+# Build + import into current session (most common during development)
+.\build.ps1 -Task Build,Import
+
+# Run Pester tests (tests/ directory)
+.\build.ps1 -Task Test
+
+# Run PSScriptAnalyzer on source/private/ and source/public/
+.\build.ps1 -Task Analyze
+
+# All tasks
+.\build.ps1 -Task Build,Test,Analyze
+``````
+
+Default when run without arguments: ``Build, Test, Import``.
+
+The ``-SemVer`` parameter overrides the version passed to ``Build-Module``.
+In CI this is set by GitVersion. Locally it can be omitted (uses ``0.0.1`` from the manifest).
+
+## Versioning and publishing
+
+Versioning is handled by **GitVersion 6** (``GitVersion.yml``). Version is computed automatically from git history.
+
+- Every commit to ``main`` produces a prerelease build (e.g. ``1.0.0-dev.3``)
+- Commit messages control version increments:
+  - ``breaking`` / ``major`` → major bump
+  - ``adds`` / ``feature`` / ``minor`` → minor bump
+  - ``fix`` / ``patch`` → patch bump (default)
+  - ``+semver: none`` or ``+semver: skip`` → no bump
+- Push a tag (e.g. ``v1.0.0``) to produce a stable release
+- Push an rc tag (e.g. ``v1.0.0-rc.1``) to produce a named prerelease
+
+Release notes are pulled from ``CHANGELOG.md`` — stable tags read ``## [X.Y.Z]``, rc tags read ``## [Unreleased]``.
+
+**PSScriptAnalyzer:** warnings are non-fatal on dev/main builds; any finding fails the build when ``CI_COMMIT_TAG`` is set.
+
+**Publishing** requires ``NUGET_API_KEY`` and ``NUGET_SERVER_URL`` environment variables.
+The publish job runs automatically on release/rc tags, and is available as a manual trigger on ``main``.
+
+## Architecture
+
+### Module loading
+
+``$ModuleName.psm1`` dot-sources all files from ``source/private/*.ps1`` and ``source/public/*.ps1`` at import time.
+
+### Critical ``\`$PSScriptRoot`` rule
+
+ModuleBuilder copies every ``.ps1`` file to the **root** of the versioned output directory — there is no ``private/`` subdirectory after building. Use ``\`$PSScriptRoot`` directly for sibling file references, not ``Split-Path \`$PSScriptRoot -Parent``.
+
+## PowerShell 5.1 compatibility
+
+The module targets PS 5.1+. Avoid cmdlets that require PS 6.1+:
+
+``````powershell
+# ✅ PS 5.1 compatible
+\$result = \$array -join "\`n"
+
+# ❌ PS Core 6.1+ only
+\$result = \$array | Join-String -Separator "\`n"
+``````
+"@
+    Set-Content "$ModulePath\CLAUDE.md" -Value $claudeMd
+
     # Module manifest — version 0.0.1 placeholder; real version set by GitVersion at build time
     New-ModuleManifest -Path "$ModulePath\source\$ModuleName.psd1" `
         -RootModule "$ModuleName.psm1" `
