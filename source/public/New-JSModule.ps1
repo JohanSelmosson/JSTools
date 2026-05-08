@@ -568,6 +568,17 @@ The publish job runs automatically on release/rc tags, and is available as a man
 
 ``$ModuleName.psm1`` dot-sources all files from ``source/private/*.ps1`` and ``source/public/*.ps1`` at import time.
 
+### Bundling static files
+
+Place any static assets (scripts, binaries, data files) under ``source/files/``.
+ModuleBuilder copies the entire ``files/`` directory into the built module output as configured in ``source/build.psd1`` (``CopyDirectories = @('.\Files')``).
+
+Reference bundled files at runtime using ``\`$PSScriptRoot``:
+
+``````powershell
+\$assetPath = Join-Path \$PSScriptRoot "files\myasset.json"
+``````
+
 ### Critical ``\`$PSScriptRoot`` rule
 
 ModuleBuilder copies every ``.ps1`` file to the **root** of the versioned output directory — there is no ``private/`` subdirectory after building. Use ``\`$PSScriptRoot`` directly for sibling file references, not ``Split-Path \`$PSScriptRoot -Parent``.
