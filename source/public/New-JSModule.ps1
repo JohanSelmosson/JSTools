@@ -378,7 +378,8 @@ if (`$Task -contains 'Publish') {
 }
 
 if (`$Task -contains 'Version') {
-    `$env:PATH = "`$env:USERPROFILE\.dotnet\tools;`$env:PATH"
+    `$dotnetTools = if (`$IsWindows) { "`$env:USERPROFILE\.dotnet\tools" } else { "`$HOME/.dotnet/tools" }
+    `$env:PATH = "`$dotnetTools`$([IO.Path]::PathSeparator)`$env:PATH"
     if (-not (Get-Command dotnet-gitversion -ErrorAction SilentlyContinue)) {
         dotnet tool install --global GitVersion.Tool --ignore-failed-sources 2>`$null
     }
