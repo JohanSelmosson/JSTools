@@ -365,6 +365,7 @@ if (`$Task -contains 'Publish') {
     if (-not `$apiKey -or -not `$serverUrl) {
         Write-Warning 'NUGET_API_KEY or NUGET_SERVER_URL is not set — skipping publish.'
     } else {
+        if (`$serverUrl -notmatch '^https?://') { `$serverUrl = "https://`$serverUrl" }
         `$repoUri = "`$serverUrl/v3/index.json"
         if (-not (Get-PSResourceRepository -Name 'NuGet' -ErrorAction SilentlyContinue)) {
             Register-PSResourceRepository -Name 'NuGet' -Uri `$repoUri -Trusted
