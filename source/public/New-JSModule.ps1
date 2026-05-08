@@ -63,7 +63,7 @@ function New-JSModule {
     # .gitignore
     $gitIgnore = @"
 Output/
-testResults.xml
+TestResults/
 .DS_Store
 "@
     Set-Content "$ModulePath\.gitignore" -Value $gitIgnore
@@ -326,20 +326,40 @@ if ((Get-Module Pester -ListAvailable | Where-Object { `$_.Version -ge '5.0' }) 
 }
 
 if (`$Task -contains 'Test') {
+    `$null = New-Item -Path "`$PSScriptRoot\TestResults" -ItemType Directory -Force
     Import-Module Pester -MinimumVersion 5.0 -Force
     `$config = [PesterConfiguration]::Default
     `$config.Run.Path = "`$PSScriptRoot\tests\"
     `$config.TestResult.Enabled = `$true
-    `$config.TestResult.OutputPath = "`$PSScriptRoot\testResults.xml"
+    `$config.TestResult.OutputPath = "`$PSScriptRoot\TestResults\testResults.xml"
     `$config.TestResult.OutputFormat = 'JUnitXml'
     `$config.CodeCoverage.Enabled = `$false
     Invoke-Pester -Configuration `$config
 }
 
 if (`$Task -contains 'Analyze') {
+    `$null = New-Item -Path "`$PSScriptRoot\TestResults" -ItemType Directory -Force
     `$findings = @()
     `$findings += Invoke-ScriptAnalyzer -Path `$PSScriptRoot\source\private\* -Settings `$PSScriptRoot\tests\PSScriptAnalyzerSettings.psd1
     `$findings += Invoke-ScriptAnalyzer -Path `$PSScriptRoot\source\public\*  -Settings `$PSScriptRoot\tests\PSScriptAnalyzerSettings.psd1
+
+    # Emit JUnit XML so GitLab can show results in the test report
+    `$failures = `$findings.Count
+    `$tests    = [Math]::Max(`$failures, 1)
+    `$sb = [System.Text.StringBuilder]::new()
+    `$null = `$sb.AppendLine('<?xml version="1.0" encoding="UTF-8"?>')
+    `$null = `$sb.AppendLine("<testsuites><testsuite name=``"PSScriptAnalyzer``" tests=``"`$tests``" failures=``"`$failures``">")
+    if (`$findings) {
+        foreach (`$f in `$findings) {
+            `$name = [System.Security.SecurityElement]::Escape("`$(`$f.RuleName) — `$(Split-Path `$f.ScriptPath -Leaf):`$(`$f.Line)")
+            `$msg  = [System.Security.SecurityElement]::Escape(`$f.Message)
+            `$null = `$sb.AppendLine("<testcase name=``"`$name``" classname=``"PSScriptAnalyzer``"><failure message=``"`$msg``"/></testcase>")
+        }
+    } else {
+        `$null = `$sb.AppendLine('<testcase name="All rules passed" classname="PSScriptAnalyzer"/>')
+    }
+    `$null = `$sb.AppendLine('</testsuite></testsuites>')
+    `$sb.ToString() | Set-Content "`$PSScriptRoot\TestResults\psaResults.xml" -Encoding UTF8
 
     if (`$findings) {
         `$findings | Format-Table -AutoSize
@@ -432,9 +452,9 @@ psscriptanalyzer:
   artifacts:
     when: always
     paths:
-      - psaResults.xml
+      - TestResults/psaResults.xml
     reports:
-      junit: psaResults.xml
+      junit: TestResults/psaResults.xml
 
 pester:
   stage: test
@@ -446,9 +466,9 @@ pester:
   artifacts:
     when: always
     paths:
-      - testResults.xml
+      - TestResults/testResults.xml
     reports:
-      junit: testResults.xml
+      junit: TestResults/testResults.xml
 
 publish:
   stage: publish
