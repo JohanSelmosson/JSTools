@@ -462,9 +462,6 @@ publish:
     paths:
       - "$ModuleName-*.zip"
     expire_in: 90 days
-  variables:
-    NUGET_API_KEY: `$NUGET_API_KEY
-    NUGET_SERVER_URL: `$NUGET_SERVER_URL
 
 release:
   stage: release
