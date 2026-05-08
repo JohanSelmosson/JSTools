@@ -23,7 +23,10 @@ function New-JSModule {
 
         # GitLab runner tag used in .gitlab-ci.yml
         [Parameter()]
-        [string]$RunnerTag = "windows-build"
+        [string]$RunnerTag = "windows-build",
+
+        [Parameter(Mandatory)]
+        [string]$Description
     )
 
     if ($Path -eq "") {
@@ -611,10 +614,15 @@ The module targets PS 5.1+. Avoid cmdlets that require PS 6.1+:
     Set-Content "$ModulePath\CLAUDE.md" -Value $claudeMd
 
     # Module manifest — version 0.0.1 placeholder; real version set by GitVersion at build time
-    New-ModuleManifest -Path "$ModulePath\source\$ModuleName.psd1" `
-        -RootModule "$ModuleName.psm1" `
-        -ModuleVersion '0.0.1' `
-        -Author 'Johan Selmosson'
+    $manifestParams = @{
+        Path        = "$ModulePath\source\$ModuleName.psd1"
+        RootModule  = "$ModuleName.psm1"
+        ModuleVersion = '0.0.1'
+        Author      = 'Johan Selmosson'
+        CompanyName = 'Nordlo'
+        Description = $Description
+    }
+    New-ModuleManifest @manifestParams
 
     # Add Prerelease and ReleaseNotes to PSData — required for ModuleBuilder -SemVer to work
     $manifestPath = "$ModulePath\source\$ModuleName.psd1"
