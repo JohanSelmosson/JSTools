@@ -429,6 +429,12 @@ psscriptanalyzer:
   stage: test
   script:
     - pwsh -c '& ./build.ps1 -Task Analyze'
+  artifacts:
+    when: always
+    paths:
+      - psaResults.xml
+    reports:
+      junit: psaResults.xml
 
 pester:
   stage: test
@@ -460,12 +466,13 @@ publish:
   script:
     - |
       & ./build.ps1 -Task Publish
-      `$src = (Get-ChildItem ./Output/$ModuleName -Directory | Sort-Object Name -Descending | Select-Object -First 1).FullName
+      `$moduleName = (Get-ChildItem ./Output -Directory | Select-Object -First 1).Name
+      `$src = (Get-ChildItem ./Output/`$moduleName -Directory | Sort-Object Name -Descending | Select-Object -First 1).FullName
       `$ver = Split-Path `$src -Leaf
-      Compress-Archive -Path "`$src\*" -DestinationPath "$ModuleName-`$ver.zip"
+      Compress-Archive -Path "`$src\*" -DestinationPath "`$moduleName-`$ver.zip"
   artifacts:
     paths:
-      - "$ModuleName-*.zip"
+      - "*.zip"
     expire_in: 90 days
 
 release:
@@ -482,7 +489,7 @@ release:
       `$changelog = Get-Content CHANGELOG.md -Raw
       `$notes = [regex]::Match(`$changelog, "(?m)^## \[`$([regex]::Escape(`$version))\][^\n]*\r?\n([\s\S]*?)(?=\r?\n^## \[|\z)").Groups[1].Value.Trim()
       if (-not `$notes) { `$notes = "Release `$env:CI_COMMIT_TAG" }
-      `$zipName = (Get-ChildItem "$ModuleName-*.zip" | Select-Object -First 1).Name
+      `$zipName = (Get-ChildItem "*.zip" | Select-Object -First 1).Name
       `$assetUrl = "`$env:CI_PROJECT_URL/-/jobs/artifacts/`$env:CI_COMMIT_TAG/raw/`$zipName?job=publish"
       `$body = @{
         name        = `$env:CI_COMMIT_TAG
@@ -490,11 +497,14 @@ release:
         description = `$notes
         assets      = @{ links = @(@{ name = `$zipName; url = `$assetUrl }) }
       } | ConvertTo-Json -Depth 5
-      Invoke-RestMethod -Uri "`$env:CI_API_V4_URL/projects/`$env:CI_PROJECT_ID/releases" ``
-        -Method Post ``
-        -Headers @{ "JOB-TOKEN" = `$env:CI_JOB_TOKEN } ``
-        -Body `$body ``
-        -ContentType "application/json"
+      `$irmParams = @{
+        Uri         = "`$env:CI_API_V4_URL/projects/`$env:CI_PROJECT_ID/releases"
+        Method      = 'Post'
+        Headers     = @{ 'JOB-TOKEN' = `$env:CI_JOB_TOKEN }
+        Body        = `$body
+        ContentType = 'application/json'
+      }
+      Invoke-RestMethod @irmParams
 
 release-prerelease:
   stage: release
@@ -509,7 +519,7 @@ release-prerelease:
       `$changelog = Get-Content CHANGELOG.md -Raw
       `$notes = [regex]::Match(`$changelog, '(?m)^## \[Unreleased\][^\n]*\r?\n([\s\S]*?)(?=\r?\n^## \[|\z)').Groups[1].Value.Trim()
       if (-not `$notes) { `$notes = "Pre-release `$env:CI_COMMIT_TAG" }
-      `$zipName = (Get-ChildItem "$ModuleName-*.zip" | Select-Object -First 1).Name
+      `$zipName = (Get-ChildItem "*.zip" | Select-Object -First 1).Name
       `$assetUrl = "`$env:CI_PROJECT_URL/-/jobs/artifacts/`$env:CI_COMMIT_TAG/raw/`$zipName?job=publish"
       `$body = @{
         name        = "`$env:CI_COMMIT_TAG (pre-release)"
@@ -517,11 +527,14 @@ release-prerelease:
         description = `$notes
         assets      = @{ links = @(@{ name = `$zipName; url = `$assetUrl }) }
       } | ConvertTo-Json -Depth 5
-      Invoke-RestMethod -Uri "`$env:CI_API_V4_URL/projects/`$env:CI_PROJECT_ID/releases" ``
-        -Method Post ``
-        -Headers @{ "JOB-TOKEN" = `$env:CI_JOB_TOKEN } ``
-        -Body `$body ``
-        -ContentType "application/json"
+      `$irmParams = @{
+        Uri         = "`$env:CI_API_V4_URL/projects/`$env:CI_PROJECT_ID/releases"
+        Method      = 'Post'
+        Headers     = @{ 'JOB-TOKEN' = `$env:CI_JOB_TOKEN }
+        Body        = `$body
+        ContentType = 'application/json'
+      }
+      Invoke-RestMethod @irmParams
 "@
     Set-Content "$ModulePath\.gitlab-ci.yml" -Value $gitlabCi
 
