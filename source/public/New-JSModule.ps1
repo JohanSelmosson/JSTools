@@ -114,9 +114,11 @@ describe 'Module-level tests' {
     }
 
     it 'passes all default PSScriptAnalyzer rules' {
-        Invoke-ScriptAnalyzer -Path "`$PSScriptRoot\..\Output\$ModuleName\`$script:Version\$ModuleName.psm1" `
-            -Settings "`$PSScriptRoot\..\tests\PSScriptAnalyzerSettings.psd1" |
-            Should -BeNullOrEmpty
+        `$params = @{
+            Path     = "`$PSScriptRoot\..\Output\$ModuleName\`$script:Version\$ModuleName.psm1"
+            Settings = "`$PSScriptRoot\..\tests\PSScriptAnalyzerSettings.psd1"
+        }
+        Invoke-ScriptAnalyzer @params | Should -BeNullOrEmpty
     }
 }
 "@
